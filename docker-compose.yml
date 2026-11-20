@@ -9,7 +9,7 @@
 
 x-common: &common
   build: .
-  image: autousenet-downloader:latest
+  image: ${IMAGE:-ghcr.io/cerlendson/autousenetdownloader:latest}
   restart: unless-stopped
   environment:
     TZ: ${TZ:-UTC}

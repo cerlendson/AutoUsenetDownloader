@@ -31,6 +31,24 @@ Open `http://<your-server>:8080`, then:
 4. **Settings.** Set the polling interval (default 30 minutes) and the search window (default 24 hours). Turn on **Move completed downloads** if you want that (see below).
 5. Back on the **Dashboard**, click **Scan now**, or wait for the next scheduled scan.
 
+### Prebuilt image (no build needed)
+
+Every push to `main` on GitHub builds and publishes an image (amd64 and arm64) to:
+
+```
+ghcr.io/cerlendson/autousenetdownloader:latest
+```
+
+To use it instead of building locally, run `docker compose pull && docker compose up -d`. The Compose file already points at this image. Set `IMAGE=` in `.env` to use a different one.
+
+If the repository is private, the image is private too. Either run `docker login ghcr.io` with a GitHub token that has `read:packages`, or make the package public under GitHub → Packages → autousenetdownloader → Package settings.
+
+In a Docker UI such as Portainer, Unraid or Synology, use the repository/image `ghcr.io/cerlendson/autousenetdownloader:latest`. Create two containers from it:
+- **web**: map port 8080 and mount `/config`.
+- **worker**: use the command `python -m app.worker`, and mount `/config`, `/nzbget-completed` and `/target`.
+
+Both containers must share the same `/config` folder.
+
 ### `.env` settings
 
 | Variable | Meaning |
@@ -117,8 +135,9 @@ If a move fails (for example the folder isn't found, or permission is denied), t
 Your data lives in `CONFIG_DIR` (`./config`), outside the containers. To update:
 
 ```bash
-# get the new code (copy the new files over, or git pull)
-docker compose up -d --build
+docker compose pull && docker compose up -d     # prebuilt image
+# or, building from source:
+git pull && docker compose up -d --build
 ```
 
 Database changes are applied automatically when the app starts. To back up, copy `./config/autousenet.db`, ideally with the containers stopped.
