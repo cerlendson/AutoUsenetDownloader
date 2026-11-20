@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_status.html" import badge %}
+{% block content %}
+<div class="page-head"><h1>Downloads</h1></div>
+<form method="get" class="filters">
+  {% for v, l in [('', 'All'), ('active', 'Active'), ('queued','Queued'), ('downloading','Downloading'), ('processing','Processing'), ('completed','Completed'), ('failed','Failed')] %}
+    <a class="btn {{ 'primary' if status == v }}" href="?status={{ v }}&q={{ q|urlencode }}">{{ l }}</a>
+  {% endfor %}
+  <input type="hidden" name="status" value="{{ status }}">
+  <input name="q" value="{{ q }}" placeholder="Search titles or profiles">
+  <button class="btn">Search</button>
+</form>
+<p class="muted">{{ total }} item(s). Only downloads sent by this app are listed. Removing an item from history lets it be downloaded again.</p>
+<table>
+  <thead><tr><th>Release</th><th>Profile</th><th>Indexer</th><th>Size</th><th>Status</th><th>NZBGet</th><th>Queued</th><th>Completed folder</th><th></th></tr></thead>
+  <tbody>
+  {% for d in downloads %}
+  <tr>
+    <td class="title">{{ d.title }}<div class="sub">matched {{ d.matched_term }}{% if d.pub_date %} · posted {{ d.pub_date|localtime }}{% endif %}</div></td>
+    <td>{{ d.profile_name }}</td>
+    <td>{{ d.indexer_name }}</td>
+    <td class="nowrap">{{ d.size|size }}</td>
+    <td>{{ badge(d.status) }}{% if d.message %}<div class="sub {{ 'err' if d.status == 'failed' or d.move_state == 'error' }}">{{ d.message }}</div>{% endif %}</td>
+    <td class="mono">#{{ d.nzbget_id }}<div class="sub">{{ d.nzbget_status or '' }}</div></td>
+    <td class="nowrap">{{ d.queued_at|localtime }}</td>
+    <td class="mono small">{% if d.moved_to %}{{ d.moved_to }}{% elif d.source_dir %}{{ d.source_dir }}{% endif %}
+      {% if d.move_state == 'pending' and d.status == 'completed' %}<div class="sub">move pending</div>{% endif %}</td>
+    <td class="actions">
+      {% if d.move_state == 'error' %}<form method="post" action="/downloads/{{ d.id }}/retry-move"><button class="btn">Retry move</button></form>{% endif %}
+      <form method="post" action="/downloads/{{ d.id }}/forget" onsubmit="return confirm('Remove from history? It may be downloaded again if it still matches.')"><button class="btn danger">Remove</button></form>
+    </td>
+  </tr>
+  {% else %}<tr><td colspan="9" class="muted">Nothing here.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% if pages > 1 %}
+<div class="pager">
+  {% if page > 1 %}<a class="btn" href="?status={{ status }}&q={{ q|urlencode }}&page={{ page - 1 }}">← Newer</a>{% endif %}
+  <span>Page {{ page }} of {{ pages }}</span>
+  {% if page < pages %}<a class="btn" href="?status={{ status }}&q={{ q|urlencode }}&page={{ page + 1 }}">Older →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

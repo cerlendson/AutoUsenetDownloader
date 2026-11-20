@@ -1,0 +1,210 @@
+Create a self-hosted web application that automatically monitors Usenet indexers for new posts matching user-defined search criteria and automatically downloads matching content via NZBGet.
+
+The application is intended to function similarly to the "wanted content" features found in media automation tools, but it must support arbitrary keyword-based searching across configurable Usenet categories.
+
+Application must be fully containerized.
+Use Docker Compose for deployment.
+Persist all configuration and database data using Docker volumes.
+Support easy updates without data loss.
+Application configuration should be stored outside the container where possible.
+
+
+The application must support one or more NZB indexers.
+
+Examples:
+
+NZBFinder
+NZBGeek
+
+Configuration per indexer:
+
+Name
+API URL
+API Key
+Enabled/Disabled
+Test Connection button
+priority
+
+The system should query indexers using their API.
+
+3. Search Profiles
+
+Users can create multiple search profiles.
+
+Each profile contains:
+
+Profile Name
+Category Selection
+
+Example:
+
+Audio
+Audio > Lossless
+Audio > MP3
+Books > Ebooks
+Movies
+Movies > UHD
+Movies > SD
+
+
+Store category IDs per indexer where necessary.
+
+Keywords
+
+Support multiple keyword types:
+
+Single Keywords
+
+Examples:
+
+Beatles
+Metallica
+Pink Floyd
+
+Exact Phrases
+
+Examples:
+
+"Michael Jackson"
+"The Rolling Stones"
+
+
+4. Scheduled Searching
+
+A background worker service must automatically search all enabled profiles.
+
+Requirements:
+
+Polling Interval
+
+Default:
+
+30 minutes
+
+
+User configurable.
+
+Examples:
+
+15 minutes
+30 minutes
+60 minutes
+
+Search Window
+
+The service should only look for posts published within the last:
+
+24 hours
+
+
+User configurable.
+
+Examples:
+
+12h
+24h
+48h
+7 days
+
+5. Matching Logic
+
+When scanning search results:
+
+For each result:
+
+Verify category matches selected profile categories.
+Verify publication date falls within search window.
+Compare title against keywords/phrases.
+If match found:
+Check if it has already been processed.
+If not processed, send to NZBGet.
+
+Matching should be:
+
+Keyword Example
+
+Profile keyword:
+
+Beatles
+
+
+Matches:
+
+The Beatles - Abbey Road FLAC
+Beatles Discography
+Rare Beatles Collection
+
+Phrase Example
+
+Profile phrase:
+
+"Michael Jackson"
+
+
+Matches:
+
+Michael Jackson - Thriller
+Michael Jackson Collection FLAC
+
+
+Does not match:
+
+Jackson Family Collection
+
+6. Duplicate Prevention
+
+A critical requirement.
+
+The application must never download the same post twice.
+
+Track downloaded items using:
+
+GUID
+NZB ID
+Indexer ID
+Release Name
+Hash where available
+
+Before downloading check to see if this release already been processed?
+
+If yes Skip
+Otherwise  Connect via NZBGet API.
+
+Settings:
+
+Host
+Port
+Username
+Password
+SSL On/Off
+
+Actions:
+
+Connection Test
+
+Verify API connectivity.
+
+Queue Download
+
+Send NZB to NZBGet.
+
+Capture:
+
+NZBGet ID
+Download Status
+Queue Date
+
+Application should periodically monitor NZBGet to track Queued, Downloading, Completed, Failed items. But only the items this application has requested... not downloads initiated outside this app.
+
+When NZBGet reports a download as completed Move completed download folder from NZBGet destination into a configurable target location.
+
+
+The Dashboard should show:
+
+Last scan time
+Next scan time
+Number of profiles
+Downloads today
+Active downloads
+Failed downloads
+Search Profiles Page

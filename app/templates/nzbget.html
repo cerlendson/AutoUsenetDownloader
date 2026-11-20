@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>NZBGet</h1>
+{% if test_result %}<div class="flash {{ 'success' if test_result[0] else 'error' }}">{{ test_result[1] }}</div>{% endif %}
+<form method="post" action="/nzbget" class="form">
+  <label>Host <input name="nzbget_host" value="{{ s.nzbget_host }}" placeholder="nzbget or 192.168.1.10" required>
+    <small>Use the Compose service name (e.g. <code>nzbget</code>) if NZBGet is in the same Compose project, otherwise its IP or hostname.</small></label>
+  <label>Port <input name="nzbget_port" type="number" value="{{ s.nzbget_port }}"></label>
+  <label>Username <input name="nzbget_username" value="{{ s.nzbget_username }}" autocomplete="off"></label>
+  <label>Password <input name="nzbget_password" type="password" value="" autocomplete="new-password" placeholder="{{ 'Saved (leave blank to keep)' if s.nzbget_password else '' }}">
+    {% if s.nzbget_password %}<span class="check"><input type="checkbox" name="clear_password" value="1"> Clear saved password</span>{% endif %}</label>
+  <label class="check"><input type="checkbox" name="nzbget_ssl" value="1" {{ 'checked' if s.nzbget_ssl }}> Use SSL (https)</label>
+  <label>Category <input name="nzbget_category" value="{{ s.nzbget_category }}" placeholder="optional, e.g. autousenet">
+    <small>NZBGet category to add downloads under. Leave blank for none.</small></label>
+  <label>Priority
+    <select name="nzbget_priority">
+      {% for v, l in [(-100,'Very low'),(-50,'Low'),(0,'Normal'),(50,'High'),(100,'Very high'),(900,'Force')] %}
+        <option value="{{ v }}" {{ 'selected' if s.nzbget_priority == v }}>{{ l }}</option>
+      {% endfor %}
+    </select></label>
+  <div class="buttons">
+    <button class="btn primary" name="action" value="save">Save</button>
+    <button class="btn" name="action" value="test">Test connection</button>
+  </div>
+</form>
+{% endblock %}

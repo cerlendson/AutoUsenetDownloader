@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Search Profiles</h1>
+  <div class="buttons">
+    <form method="post" action="/scan-now"><button class="btn">Scan all now</button></form>
+    <a class="btn primary" href="/profiles/new">New profile</a>
+  </div>
+</div>
+{% if profiles %}
+<table>
+  <thead><tr><th>Name</th><th>Categories</th><th>Keywords &amp; phrases</th><th>Downloads</th><th>Last run</th><th></th></tr></thead>
+  <tbody>
+  {% for p in profiles %}
+  <tr class="{{ 'disabled' if not p.enabled }}">
+    <td><a href="/profiles/{{ p.id }}">{{ p.name }}</a>{% if not p.enabled %} <span class="badge">disabled</span>{% endif %}</td>
+    <td>{% for c in p.categories_list %}<span class="chip">{{ category_label(c) }}</span>{% endfor %}</td>
+    <td>{% for t in p.terms %}<span class="chip {{ 'phrase' if t.phrase }} {{ 'exclude' if t.exclude }}">{{ t.display }}</span>{% endfor %}</td>
+    <td><a href="/downloads?q={{ p.name|urlencode }}">{{ p.download_count }}</a></td>
+    <td class="nowrap">{{ p.last_run_at|ago }}</td>
+    <td class="actions">
+      <form method="post" action="/profiles/{{ p.id }}/toggle"><button class="btn">{{ 'Disable' if p.enabled else 'Enable' }}</button></form>
+      <a class="btn" href="/profiles/{{ p.id }}">Edit</a>
+      <form method="post" action="/profiles/{{ p.id }}/delete" onsubmit="return confirm('Delete profile {{ p.name|e }}?')"><button class="btn danger">Delete</button></form>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p>No search profiles yet. <a href="/profiles/new">Create one.</a></p>{% endif %}
+{% endblock %}

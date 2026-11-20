@@ -1,0 +1,11 @@
+.git
+.env
+config
+library
+nzbget-completed
+nzbget-config
+nzbget-downloads
+tests
+**/__pycache__
+**/*.pyc
+.pytest_cache

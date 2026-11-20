@@ -1,0 +1,65 @@
+# AutoUsenetDownloader
+#
+#   cp .env.example .env      # then edit paths, PUID/PGID, TZ, optional login
+#   docker compose up -d --build
+#   open http://<host>:8080
+#
+# All configuration and history live in ./config (SQLite database), so
+# rebuilding or updating the image never loses data.
+
+x-common: &common
+  build: .
+  image: autousenet-downloader:latest
+  restart: unless-stopped
+  environment:
+    TZ: ${TZ:-UTC}
+    PUID: ${PUID:-1000}
+    PGID: ${PGID:-1000}
+    DATA_DIR: /config
+    AUTH_USERNAME: ${AUTH_USERNAME:-}
+    AUTH_PASSWORD: ${AUTH_PASSWORD:-}
+
+services:
+  web:
+    <<: *common
+    container_name: autousenet-web
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    volumes:
+      - ${CONFIG_DIR:-./config}:/config
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  worker:
+    <<: *common
+    container_name: autousenet-worker
+    command: ["python", "-m", "app.worker"]
+    depends_on:
+      - web
+    volumes:
+      - ${CONFIG_DIR:-./config}:/config
+      # NZBGet's completed-downloads folder, as seen from this host.
+      - ${NZBGET_COMPLETED_DIR:-./nzbget-completed}:/nzbget-completed
+      # Where completed downloads are moved to (Settings > Target folder = /target).
+      - ${TARGET_DIR:-./library}:/target
+
+  # Optional: run NZBGet in the same project. If you already run NZBGet
+  # elsewhere, leave this commented out and enter its host/port on the NZBGet page.
+  # nzbget:
+  #   image: lscr.io/linuxserver/nzbget:latest
+  #   container_name: nzbget
+  #   restart: unless-stopped
+  #   environment:
+  #     PUID: ${PUID:-1000}
+  #     PGID: ${PGID:-1000}
+  #     TZ: ${TZ:-UTC}
+  #     NZBGET_USER: nzbget
+  #     NZBGET_PASS: change-me
+  #   ports:
+  #     - "6789:6789"
+  #   volumes:
+  #     - ./nzbget-config:/config
+  #     - ${NZBGET_DOWNLOADS_DIR:-./nzbget-downloads}:/downloads

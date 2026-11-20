@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ 'Edit indexer' if ix.id else 'Add indexer' }}</h1>
+{% if test_result %}<div class="flash {{ 'success' if test_result[0] else 'error' }}">{{ test_result[1] }}</div>{% endif %}
+<form method="post" action="/indexers/save" class="form">
+  <input type="hidden" name="id" value="{{ ix.id or '' }}">
+  <label>Name <input name="name" value="{{ ix.name }}" placeholder="NZBGeek" required></label>
+  <label>API URL <input name="api_url" value="{{ ix.api_url }}" placeholder="https://api.nzbgeek.info" required>
+    <small>The site address or its API endpoint; <code>/api</code> is added if missing. Examples: <code>https://api.nzbgeek.info</code>, <code>https://nzbfinder.ws</code>.</small></label>
+  <label>API key <input name="api_key" type="password" autocomplete="off" value="" placeholder="{{ (ix.api_key|mask) if ix.api_key else 'Your API key' }}">
+    {% if ix.id %}<small>Leave blank to keep the current key.</small>{% endif %}</label>
+  <label>Priority <input name="priority" type="number" min="1" max="100" value="{{ ix.priority }}">
+    <small>1 is the highest priority.</small></label>
+  <label class="check"><input type="checkbox" name="enabled" value="1" {{ 'checked' if ix.enabled }}> Enabled</label>
+
+  <details {{ 'open' if cat_map }}>
+    <summary>Category IDs for this indexer (optional)</summary>
+    <p class="muted">Profiles pick categories by name. By default each name uses the standard Newznab ID shown as the placeholder. If this indexer uses different IDs, enter them here (comma-separated).
+    {% if ix.id %}Use "Fetch categories" to see the IDs this indexer reports.{% else %}Save the indexer first to fetch its category list.{% endif %}</p>
+    <div class="catgrid">
+    {% for c in categories %}
+      <label class="{{ 'parent' if c.is_parent }}">{{ c.label }}
+        <input name="cat_{{ c.key }}" value="{{ cat_map.get(c.key, '') }}" placeholder="{{ c.default_ids|join(',') }}"></label>
+    {% endfor %}
+    </div>
+  </details>
+
+  <div class="buttons">
+    <button class="btn primary" name="action" value="save">Save</button>
+    <button class="btn" name="action" value="test">Test connection</button>
+    <a class="btn" href="/indexers">Cancel</a>
+  </div>
+</form>
+
+{% if ix.id %}
+<section>
+  <h2>Categories reported by this indexer</h2>
+  <form method="post" action="/indexers/{{ ix.id }}/caps"><button class="btn">Fetch categories</button></form>
+  {% if caps %}
+  <table class="compact">
+    <thead><tr><th>ID</th><th>Name</th></tr></thead>
+    <tbody>
+    {% for c in caps %}
+      <tr class="parent"><td class="mono">{{ c.id }}</td><td><strong>{{ c.name }}</strong></td></tr>
+      {% for s in c.subcats %}<tr><td class="mono">{{ s.id }}</td><td>&nbsp;&nbsp;{{ s.name }}</td></tr>{% endfor %}
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

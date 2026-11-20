@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}AutoUsenetDownloader{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">AutoUsenet<span>Downloader</span></a>
+  <nav>
+    {% set links = [("/", "Dashboard"), ("/profiles", "Search Profiles"), ("/indexers", "Indexers"),
+                    ("/downloads", "Downloads"), ("/nzbget", "NZBGet"), ("/settings", "Settings"),
+                    ("/activity", "Activity")] %}
+    {% for href, label in links %}
+      <a href="{{ href }}" class="{{ 'active' if (href == '/' and path == '/') or (href != '/' and path.startswith(href)) }}">{{ label }}</a>
+    {% endfor %}
+  </nav>
+</header>
+<main>
+  {% if msg %}<div class="flash {{ level }}">{{ msg }}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+<footer>AutoUsenetDownloader v{{ version }}</footer>
+</body>
+</html>

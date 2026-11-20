@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-head">
+  <h1>Indexers</h1>
+  <a class="btn primary" href="/indexers/new">Add indexer</a>
+</div>
+<p class="muted">Any Newznab-compatible indexer works (NZBGeek, NZBFinder, DrunkenSlug, NZBPlanet…). Lower priority numbers are searched first, so when the same release turns up on several indexers it's taken from the highest-priority one.</p>
+{% if indexers %}
+<table>
+  <thead><tr><th>Priority</th><th>Name</th><th>API URL</th><th>API key</th><th>Status</th><th>Last test</th><th></th></tr></thead>
+  <tbody>
+  {% for ix in indexers %}
+  <tr class="{{ 'disabled' if not ix.enabled }}">
+    <td>{{ ix.priority }}</td>
+    <td><a href="/indexers/{{ ix.id }}">{{ ix.name }}</a></td>
+    <td class="mono">{{ ix.api_url }}</td>
+    <td class="mono">{{ ix.api_key|mask }}</td>
+    <td>{% if ix.enabled %}<span class="badge st-completed">enabled</span>{% else %}<span class="badge">disabled</span>{% endif %}</td>
+    <td>{% if ix.last_test_at %}<span class="{{ 'ok' if ix.last_test_ok else 'err' }}" title="{{ ix.last_test_msg }}">{{ '✓' if ix.last_test_ok else '✗' }} {{ ix.last_test_at|ago }}</span>{% else %}<span class="muted">never</span>{% endif %}</td>
+    <td class="actions">
+      <form method="post" action="/indexers/{{ ix.id }}/test"><button class="btn">Test connection</button></form>
+      <form method="post" action="/indexers/{{ ix.id }}/toggle"><button class="btn">{{ 'Disable' if ix.enabled else 'Enable' }}</button></form>
+      <a class="btn" href="/indexers/{{ ix.id }}">Edit</a>
+      <form method="post" action="/indexers/{{ ix.id }}/delete" onsubmit="return confirm('Delete indexer {{ ix.name|e }}?')"><button class="btn danger">Delete</button></form>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p>No indexers yet. <a href="/indexers/new">Add your first indexer.</a></p>{% endif %}
+{% endblock %}

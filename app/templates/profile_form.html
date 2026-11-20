@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ 'Edit search profile' if p.id else 'New search profile' }}</h1>
+{% if test and test.error %}<div class="flash error">{{ test.error }}</div>{% endif %}
+<form method="post" action="/profiles/save" class="form wide">
+  <input type="hidden" name="id" value="{{ p.id or '' }}">
+  <label>Profile name <input name="name" value="{{ p.name }}" placeholder="Classic rock FLAC" required></label>
+  <label class="check"><input type="checkbox" name="enabled" value="1" {{ 'checked' if p.enabled }}> Enabled</label>
+
+  <fieldset>
+    <legend>Categories</legend>
+    <p class="muted">Picking a top-level category (e.g. Audio) includes all of its subcategories.</p>
+    <div class="catpick">
+    {% for c in categories %}
+      <label class="check {{ 'parent' if c.is_parent else 'child' }}"><input type="checkbox" name="categories" value="{{ c.key }}" {{ 'checked' if c.key in p.categories }}> {{ c.label }}</label>
+    {% endfor %}
+    </div>
+  </fieldset>
+
+  <label>Keywords and phrases
+    <textarea name="keywords" rows="8" placeholder='Beatles&#10;Pink Floyd&#10;"Michael Jackson"&#10;"The Rolling Stones"'>{{ p.keywords }}</textarea>
+    <small>One per line (commas also work). A title matches if it matches <strong>any</strong> line.<br>
+      <code>Beatles</code> keyword: the word must appear in the title.<br>
+      <code>Pink Floyd</code> keyword with several words: all of them must appear, in any order.<br>
+      <code>"Michael Jackson"</code> exact phrase: the words must appear together and in this order.<br>
+      <code>-karaoke</code> or <code>-"Greatest Hits"</code> exclusion: skip titles that contain it.<br>
+      Matching ignores case and punctuation, so <code>The.Beatles-Abbey_Road</code> matches <code>Beatles</code>.</small>
+  </label>
+  {% if terms %}<div>{% for t in terms %}<span class="chip {{ 'phrase' if t.phrase }} {{ 'exclude' if t.exclude }}">{{ t.display }}</span>{% endfor %}</div>{% endif %}
+
+  {% if indexers %}
+  <fieldset>
+    <legend>Indexers</legend>
+    <p class="muted">Leave all unticked to search every enabled indexer.</p>
+    {% for ix in indexers %}
+      <label class="check"><input type="checkbox" name="indexer_ids" value="{{ ix.id }}" {{ 'checked' if ix.id in p.indexer_ids }}> {{ ix.name }}{% if not ix.enabled %} (disabled){% endif %}</label>
+    {% endfor %}
+  </fieldset>
+  {% endif %}
+
+  <fieldset>
+    <legend>Try a title</legend>
+    <div class="inline">
+      <input name="test_title" value="{{ test.title if test and test.title else '' }}" placeholder="The Beatles - Abbey Road (2019 Remaster) FLAC">
+      <button class="btn" name="action" value="test">Test match</button>
+    </div>
+    {% if test and test.title %}
+      {% if test.hit %}<p class="ok">✓ Matches on {{ test.hit.display }}</p>
+      {% else %}<p class="err">✗ Doesn't match any keyword or phrase (or hits an exclusion).</p>{% endif %}
+    {% endif %}
+  </fieldset>
+
+  <div class="buttons">
+    <button class="btn primary" name="action" value="save">Save</button>
+    <a class="btn" href="/profiles">Cancel</a>
+  </div>
+</form>
+{% endblock %}

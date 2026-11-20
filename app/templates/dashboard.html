@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_status.html" import badge %}
+{% block head %}<meta http-equiv="refresh" content="30">{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Dashboard</h1>
+  <form method="post" action="/scan-now"><button class="btn primary" {{ 'disabled' if stats.scan_requested }}>
+    {{ 'Scan requested…' if stats.scan_requested else 'Scan now' }}</button></form>
+</div>
+
+{% if not stats.worker_ok %}
+<div class="flash error">The background worker isn't running (last heartbeat: {{ stats.worker_heartbeat|ago }}). Scans and download tracking are paused. Check <code>docker compose logs worker</code>.</div>
+{% endif %}
+{% if stats.monitor_error %}
+<div class="flash error">Couldn't check NZBGet: {{ stats.monitor_error }}</div>
+{% endif %}
+{% if stats.indexers_enabled == 0 %}
+<div class="flash warning">No enabled indexers yet. <a href="/indexers/new">Add an indexer</a> to start searching.</div>
+{% endif %}
+
+<section class="cards">
+  <div class="card"><div class="label">Last scan</div>
+    <div class="value small">{{ stats.last_scan_at|localtime }}</div><div class="sub">{{ stats.last_scan_at|ago }}</div></div>
+  <div class="card"><div class="label">Next scan</div>
+    <div class="value small">{{ stats.next_scan_at|localtime if stats.next_scan_at else 'when the worker starts' }}</div>
+    <div class="sub">{{ stats.next_scan_at|ago if stats.next_scan_at else '' }} · every {{ stats.scan_interval }} min</div></div>
+  <a class="card" href="/profiles"><div class="label">Search profiles</div>
+    <div class="value">{{ stats.profiles_total }}</div><div class="sub">{{ stats.profiles_enabled }} enabled</div></a>
+  <a class="card" href="/downloads"><div class="label">Downloads today</div>
+    <div class="value">{{ stats.downloads_today }}</div><div class="sub">{{ stats.total }} all time</div></a>
+  <a class="card" href="/downloads?status=active"><div class="label">Active downloads</div>
+    <div class="value">{{ stats.active }}</div><div class="sub">queued, downloading or processing</div></a>
+  <a class="card {{ 'bad' if stats.failed }}" href="/downloads?status=failed"><div class="label">Failed downloads</div>
+    <div class="value">{{ stats.failed }}</div><div class="sub">{{ stats.completed }} completed</div></a>
+</section>
+
+{% if stats.last_scan_summary %}<p class="muted">Last scan: {{ stats.last_scan_summary }}. Search window: last {{ stats.search_window }} hours.</p>{% endif %}
+
+<div class="two-col">
+  <section>
+    <h2>Recent downloads</h2>
+    {% if recent %}
+    <table>
+      <thead><tr><th>Release</th><th>Profile</th><th>Status</th><th>Queued</th></tr></thead>
+      <tbody>
+      {% for d in recent %}
+        <tr><td class="title">{{ d.title }}</td><td>{{ d.profile_name }}</td><td>{{ badge(d.status) }}</td>
+            <td class="nowrap">{{ d.queued_at|ago }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="muted">Nothing downloaded yet.</p>{% endif %}
+  </section>
+  <section>
+    <h2>Activity</h2>
+    <ul class="activity">
+      {% for a in activity %}
+        <li class="lvl-{{ a.level }}"><span class="ts">{{ a.ts|localtime('%m-%d %H:%M') }}</span> {{ a.message }}</li>
+      {% else %}<li class="muted">No activity yet.</li>{% endfor %}
+    </ul>
+    <a href="/activity">Full activity log →</a>
+  </section>
+</div>
+{% endblock %}

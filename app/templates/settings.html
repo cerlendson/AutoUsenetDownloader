@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Settings</h1>
+<form method="post" action="/settings" class="form">
+  <fieldset>
+    <legend>Scheduled searching</legend>
+    <label>Polling interval
+      <select name="scan_interval_minutes">
+        {% set opts = interval_choices if s.scan_interval_minutes in interval_choices else (interval_choices + [s.scan_interval_minutes])|sort %}
+        {% for m in opts %}<option value="{{ m }}" {{ 'selected' if s.scan_interval_minutes == m }}>{% if m < 60 %}{{ m }} minutes{% elif m % 60 == 0 %}{{ m // 60 }} hour{{ 's' if m > 60 }}{% else %}{{ m }} minutes{% endif %}</option>{% endfor %}
+      </select>
+      <small>How often every enabled profile is searched. Default 30 minutes.</small></label>
+    <label>Search window
+      <select name="search_window_hours">
+        {% set wopts = window_choices %}
+        {% for h, l in wopts %}<option value="{{ h }}" {{ 'selected' if s.search_window_hours == h }}>Last {{ l }}</option>{% endfor %}
+        {% if s.search_window_hours not in wopts|map('first')|list %}<option value="{{ s.search_window_hours }}" selected>Last {{ s.search_window_hours }} hours</option>{% endif %}
+      </select>
+      <small>Only posts published within this window are considered. Default 24 hours.</small></label>
+    <label>Results per search <input name="results_per_query" type="number" min="10" max="500" value="{{ s.results_per_query }}">
+      <small>Maximum results requested from an indexer per keyword. Most indexers cap this at 100.</small></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>NZBGet monitoring</legend>
+    <label>Check NZBGet every (seconds) <input name="monitor_interval_seconds" type="number" min="10" max="3600" value="{{ s.monitor_interval_seconds }}"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Completed downloads</legend>
+    <label class="check"><input type="checkbox" name="move_completed" value="1" {{ 'checked' if s.move_completed }}> Move completed downloads to the target folder</label>
+    <label>Target folder (inside this container) <input name="target_dir" value="{{ s.target_dir }}">
+      <small>Mount your library folder at <code>/target</code> in docker-compose.yml (or change this path to match).</small></label>
+    <label class="check"><input type="checkbox" name="target_subfolder_per_profile" value="1" {{ 'checked' if s.target_subfolder_per_profile }}> Put each profile's downloads in its own subfolder</label>
+    <p class="muted">The worker needs to see NZBGet's completed folder. If NZBGet reports paths that differ from where that folder is mounted in this container, map them here.</p>
+    <label>NZBGet path <input name="nzbget_path_prefix" value="{{ s.nzbget_path_prefix }}" placeholder="/downloads/completed">
+      <small>Path as NZBGet reports it (NZBGet's DestDir).</small></label>
+    <label>Path in this container <input name="local_path_prefix" value="{{ s.local_path_prefix }}" placeholder="/nzbget-completed"></label>
+  </fieldset>
+
+  <div class="buttons"><button class="btn primary">Save settings</button></div>
+</form>
+{% endblock %}

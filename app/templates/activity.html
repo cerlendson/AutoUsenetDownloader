@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Activity</h1>
+<div class="filters">
+  {% for v, l in [('', 'All'), ('info','Info'), ('warning','Warnings'), ('error','Errors')] %}
+    <a class="btn {{ 'primary' if level == v }}" href="?level={{ v }}">{{ l }}</a>
+  {% endfor %}
+</div>
+<ul class="activity full">
+  {% for a in rows %}
+    <li class="lvl-{{ a.level }}"><span class="ts">{{ a.ts|localtime('%Y-%m-%d %H:%M:%S') }}</span> {{ a.message }}</li>
+  {% else %}<li class="muted">No activity.</li>{% endfor %}
+</ul>
+{% endblock %}
