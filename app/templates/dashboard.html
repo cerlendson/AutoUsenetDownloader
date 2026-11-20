@@ -9,7 +9,7 @@
 </div>
 
 {% if not stats.worker_ok %}
-<div class="flash error">The background worker isn't running (last heartbeat: {{ stats.worker_heartbeat|ago }}). Scans and download tracking are paused. Check <code>docker compose logs worker</code>.</div>
+<div class="flash error">The background worker isn't running (last heartbeat: {{ stats.worker_heartbeat|ago }}), so scans and download tracking are paused. Check the container's logs for errors. If you set the container's command yourself, remove it so the default (<code>python -m app.run_all</code>) runs both the web UI and the worker.</div>
 {% endif %}
 {% if stats.monitor_error %}
 <div class="flash error">Couldn't check NZBGet: {{ stats.monitor_error }}</div>

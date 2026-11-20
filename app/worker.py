@@ -65,6 +65,30 @@ def tick(last_monitor: float) -> float:
     return last_monitor
 
 
+def _acquire_lock():
+    """Allow only one worker per database, even across containers.
+
+    Returns the open lock file, or None if asked to stop while waiting.
+    Another worker (e.g. an old separate `worker` container next to the
+    all-in-one container) just waits on standby.
+    """
+    import fcntl
+    path = config.DB_PATH.parent / "worker.lock"
+    f = open(path, "a+")
+    announced = False
+    while not _stop:
+        try:
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return f
+        except OSError:
+            if not announced:
+                log.info("Another worker is already running for this database; standing by")
+                announced = True
+            time.sleep(5)
+    f.close()
+    return None
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     # httpx logs full request URLs at INFO, which would put indexer API keys in the logs.
@@ -72,6 +96,10 @@ def main() -> None:
     signal.signal(signal.SIGTERM, _handle_stop)
     signal.signal(signal.SIGINT, _handle_stop)
     db.init_db()
+    lock = _acquire_lock()
+    if lock is None:
+        log.info("Worker stopped")
+        return
     db.log_activity("Worker started")
     log.info("Worker started; database at %s", config.DB_PATH)
     last_monitor = 0.0

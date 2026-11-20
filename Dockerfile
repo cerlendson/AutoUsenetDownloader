@@ -18,4 +18,4 @@ VOLUME ["/config"]
 EXPOSE 8080
 
 ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["uvicorn", "app.web:app", "--host", "0.0.0.0", "--port", "8080", "--proxy-headers"]
+CMD ["python", "-m", "app.run_all"]

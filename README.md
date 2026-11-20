@@ -2,12 +2,7 @@
 
 A self-hosted web app that regularly searches your Usenet indexers for new posts matching your own keywords and phrases, then sends the matches to NZBGet. It never grabs the same release twice. It tracks the downloads it started, and it can move finished downloads into your library folder.
 
-It runs as two small containers from one image:
-
-| Service  | What it does |
-|----------|--------------|
-| `web`    | The web UI on port 8080: dashboard, indexers, search profiles, NZBGet settings, downloads, settings and the activity log. |
-| `worker` | The background service. It runs scheduled scans, checks NZBGet for status, and moves completed folders. |
+It runs as a single container. The container serves the web UI on port 8080 and also runs the background worker, which does the scheduled scans, checks NZBGet and moves completed folders.
 
 All settings and history are stored in one SQLite database in `./config` on the host, so rebuilding or updating the containers keeps your data.
 
@@ -20,7 +15,7 @@ Requirements: Docker with the Compose plugin, NZBGet (anywhere on your network),
 ```bash
 cd AutoUsenetDownloader
 cp .env.example .env        # then edit it, see below
-docker compose up -d --build
+docker compose up -d
 ```
 
 Open `http://<your-server>:8080`, then:
@@ -43,11 +38,12 @@ To use it instead of building locally, run `docker compose pull && docker compos
 
 If the repository is private, the image is private too. Either run `docker login ghcr.io` with a GitHub token that has `read:packages`, or make the package public under GitHub → Packages → autousenetdownloader → Package settings.
 
-In a Docker UI such as Portainer, Unraid or Synology, use the repository/image `ghcr.io/cerlendson/autousenetdownloader:latest`. Create two containers from it:
-- **web**: map port 8080 and mount `/config`.
-- **worker**: use the command `python -m app.worker`, and mount `/config`, `/nzbget-completed` and `/target`.
+In a Docker UI such as Portainer, Unraid or Synology, create **one** container from `ghcr.io/cerlendson/autousenetdownloader:latest` and leave its command at the default. Then:
+- map port **8080**
+- mount these paths: `/config` (database), `/nzbget-completed` (NZBGet's completed folder) and `/target` (your library)
+- set these environment variables: `PUID`, `PGID` and `TZ`, plus `AUTH_USERNAME`/`AUTH_PASSWORD` if you want a login
 
-Both containers must share the same `/config` folder.
+Advanced: if you'd rather run the UI and the worker in separate containers, run one with the command `uvicorn app.web:app --host 0.0.0.0 --port 8080` and one with `python -m app.worker`. Both need the same `/config`. Only one worker can ever be active per database; any extra worker waits on standby.
 
 ### `.env` settings
 
@@ -58,8 +54,8 @@ Both containers must share the same `/config` folder.
 | `WEB_PORT` | Host port for the UI (default 8080). |
 | `AUTH_USERNAME` / `AUTH_PASSWORD` | Optional login for the UI. Leave both blank to turn it off. |
 | `CONFIG_DIR` | Host folder for the database (default `./config`). |
-| `NZBGET_COMPLETED_DIR` | Host folder where NZBGet puts completed downloads. It's mounted at `/nzbget-completed` in the worker. |
-| `TARGET_DIR` | Host folder that completed downloads are moved into. It's mounted at `/target` in the worker. |
+| `NZBGET_COMPLETED_DIR` | Host folder where NZBGet puts completed downloads. It's mounted at `/nzbget-completed`. |
+| `TARGET_DIR` | Host folder that completed downloads are moved into. It's mounted at `/target`. |
 
 ---
 
@@ -145,9 +141,8 @@ Database changes are applied automatically when the app starts. To back up, copy
 ## Useful commands
 
 ```bash
-docker compose logs -f worker     # watch scans and NZBGet checks
-docker compose logs -f web
-docker compose restart worker
+docker compose logs -f           # watch scans and NZBGet checks
+docker compose restart
 docker compose down               # stop (your data stays in ./config)
 ```
 
@@ -165,7 +160,8 @@ Code layout:
 ```
 app/
   web.py         web UI routes
-  worker.py      background scheduler loop
+  run_all.py     default entry point: web UI plus a supervised worker
+  worker.py      background scheduler loop (single instance per database)
   searcher.py    scan logic, matching pipeline, duplicate checks, queueing
   monitor.py     NZBGet status tracking and completed-folder moves
   newznab.py     indexer API client

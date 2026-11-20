@@ -1,50 +1,38 @@
 # AutoUsenetDownloader
 #
 #   cp .env.example .env      # then edit paths, PUID/PGID, TZ, optional login
-#   docker compose up -d --build
+#   docker compose up -d      # uses the prebuilt image (add --build to build from source)
 #   open http://<host>:8080
 #
+# One container runs both the web UI and the background worker.
 # All configuration and history live in ./config (SQLite database), so
-# rebuilding or updating the image never loses data.
-
-x-common: &common
-  build: .
-  image: ${IMAGE:-ghcr.io/cerlendson/autousenetdownloader:latest}
-  restart: unless-stopped
-  environment:
-    TZ: ${TZ:-UTC}
-    PUID: ${PUID:-1000}
-    PGID: ${PGID:-1000}
-    DATA_DIR: /config
-    AUTH_USERNAME: ${AUTH_USERNAME:-}
-    AUTH_PASSWORD: ${AUTH_PASSWORD:-}
+# updating the image never loses data.
 
 services:
-  web:
-    <<: *common
-    container_name: autousenet-web
+  autousenet:
+    build: .
+    image: ${IMAGE:-ghcr.io/cerlendson/autousenetdownloader:latest}
+    container_name: autousenet
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-UTC}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      AUTH_USERNAME: ${AUTH_USERNAME:-}
+      AUTH_PASSWORD: ${AUTH_PASSWORD:-}
     ports:
       - "${WEB_PORT:-8080}:8080"
-    volumes:
-      - ${CONFIG_DIR:-./config}:/config
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  worker:
-    <<: *common
-    container_name: autousenet-worker
-    command: ["python", "-m", "app.worker"]
-    depends_on:
-      - web
     volumes:
       - ${CONFIG_DIR:-./config}:/config
       # NZBGet's completed-downloads folder, as seen from this host.
       - ${NZBGET_COMPLETED_DIR:-./nzbget-completed}:/nzbget-completed
       # Where completed downloads are moved to (Settings > Target folder = /target).
       - ${TARGET_DIR:-./library}:/target
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   # Optional: run NZBGet in the same project. If you already run NZBGet
   # elsewhere, leave this commented out and enter its host/port on the NZBGet page.
