@@ -18,3 +18,22 @@ def test_create_profile_and_indexer(fresh_db):
         r = c.post("/settings", data={"scan_interval_minutes": "15", "search_window_hours": "48"})
         assert fresh_db.get_setting("scan_interval_minutes") == 15
         assert fresh_db.get_setting("search_window_hours") == 48
+
+
+def test_all_standard_categories_offered_including_xxx_and_custom(fresh_db):
+    import json
+    from app import db
+    from app.web import app
+    with db.connect() as conn:
+        conn.execute("INSERT INTO indexers(name, api_url, caps_json, created_at) VALUES (?,?,?,?)",
+                     ("Geek", "https://x", json.dumps([{"id": "6000", "name": "XXX", "subcats": []},
+                                                        {"id": "100500", "name": "Special", "subcats": [
+                                                            {"id": "100501", "name": "Bootlegs"}]}]), db.iso(db.utcnow())))
+    with TestClient(app) as c:
+        html = c.get("/profiles/new").text
+        for text in ["XXX &gt; x264", "Books &gt; Foreign", "Movies &gt; WEB-DL", "Special &gt; Bootlegs", 'value="ix:1:100501"']:
+            assert text in html, text
+        c.post("/profiles/save", data={"name": "P", "enabled": "1", "categories": ["xxx", "ix:1:100501"],
+                                       "keywords": "foo", "action": "save"})
+        page = c.get("/profiles").text
+        assert "XXX" in page and "Geek: Special &gt; Bootlegs (100501)" in page

@@ -124,8 +124,10 @@ def run_scan(now: datetime | None = None,
             for ix in indexers:
                 if allowed_ix and ix["id"] not in allowed_ix:
                     continue
+                if not categories.applies_to(cat_keys, ix["id"]):
+                    continue  # profile only uses other indexers' custom categories
                 cat_map = json.loads(ix["category_map"] or "{}")
-                wanted_ids = categories.ids_for(cat_keys, cat_map)
+                wanted_ids = categories.ids_for(cat_keys, cat_map, ix["id"])
                 if ix["id"] not in clients:
                     try:
                         clients[ix["id"]] = indexer_factory(ix)

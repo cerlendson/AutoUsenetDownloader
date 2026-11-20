@@ -122,3 +122,14 @@ def test_indexer_and_nzbget_test_connection():
     nz = FakeNZBGet()
     ok = NZBGetClient("nzbget", 6789, "nzbget", "secret", transport=httpx.MockTransport(nz.handler))
     assert "24.3" in ok.test()
+
+
+def test_custom_indexer_category_only_used_on_that_indexer(fresh_db):
+    item = {"id": "c1", "title": "Beatles Bootleg", "cats": [100500], "date": ago(1)}
+    fakes, nz, scan, _ = setup(fresh_db, {"geek": [item], "finder": [item]}, keywords="Beatles",
+                               cats=("ix:1:100500",))
+    stats = scan()
+    assert stats.queued == 1
+    geek, finder = fakes[1], fakes[2]
+    assert geek.queries[0]["cat"] == ["100500"]
+    assert finder.queries == []  # never searched without a category filter

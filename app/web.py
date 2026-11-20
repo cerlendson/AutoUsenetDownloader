@@ -91,7 +91,21 @@ templates.env.filters["localtime"] = fmt_time
 templates.env.filters["ago"] = fmt_ago
 templates.env.filters["size"] = fmt_size
 templates.env.filters["mask"] = mask
-templates.env.globals["category_label"] = categories.label
+def category_label(key: str) -> str:
+    """Label for a profile category key, including indexers' custom categories."""
+    custom = categories.parse_custom_key(key)
+    if not custom:
+        return categories.label(key)
+    ix = _get_indexer(custom[0])
+    if not ix:
+        return f"(deleted indexer) {custom[1]}"
+    for c in categories.custom_categories(ix):
+        if c["id"] == custom[1]:
+            return f"{ix['name']}: {c['label']} ({c['id']})"
+    return f"{ix['name']}: {custom[1]}"
+
+
+templates.env.globals["category_label"] = category_label
 templates.env.globals["version"] = __version__
 
 
@@ -380,14 +394,19 @@ def profiles_page(request: Request):
 
 def _profile_form(request: Request, p: dict, test: dict | None = None):
     with db.connect() as conn:
-        indexers = db.rows_to_dicts(conn.execute("SELECT id, name, enabled FROM indexers ORDER BY priority, id").fetchall())
+        indexers = db.rows_to_dicts(conn.execute(
+            "SELECT id, name, enabled, caps_json FROM indexers ORDER BY priority, id").fetchall())
+    custom_groups = [{"indexer": ix["name"], "cats": categories.custom_categories(ix)}
+                     for ix in indexers]
+    custom_groups = [g for g in custom_groups if g["cats"]]
+    caps_fetched = any(json.loads(ix["caps_json"] or "[]") for ix in indexers)
     p = dict(p)
     if isinstance(p.get("categories"), str):
         p["categories"] = json.loads(p["categories"] or "[]")
     if isinstance(p.get("indexer_ids"), str):
         p["indexer_ids"] = json.loads(p["indexer_ids"] or "[]")
     return render(request, "profile_form.html", p=p, categories=categories.CATEGORIES,
-                  indexers=indexers, terms=matcher.parse_terms(p.get("keywords", "")), test=test)
+                  custom_groups=custom_groups, caps_fetched=caps_fetched, indexers=indexers, terms=matcher.parse_terms(p.get("keywords", "")), test=test)
 
 
 @app.get("/profiles/new", response_class=HTMLResponse)
@@ -411,7 +430,7 @@ async def profile_save(request: Request):
         "id": _int(form.get("id"), 0) or None,
         "name": str(form.get("name", "")).strip(),
         "enabled": 1 if _bool(form.get("enabled")) else 0,
-        "categories": [c for c in form.getlist("categories") if c in categories.BY_KEY],
+        "categories": [c for c in form.getlist("categories") if categories.is_valid_key(c)],
         "keywords": str(form.get("keywords", "")).replace("\r\n", "\n").strip(),
         "indexer_ids": [_int(i, 0) for i in form.getlist("indexer_ids") if _int(i, 0)],
     }

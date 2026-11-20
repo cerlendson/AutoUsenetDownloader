@@ -15,6 +15,18 @@
       <label class="check {{ 'parent' if c.is_parent else 'child' }}"><input type="checkbox" name="categories" value="{{ c.key }}" {{ 'checked' if c.key in p.categories }}> {{ c.label }}</label>
     {% endfor %}
     </div>
+    {% if custom_groups %}
+      {% for g in custom_groups %}
+      <p class="muted"><strong>{{ g.indexer }}</strong>: its own categories (only used when searching {{ g.indexer }})</p>
+      <div class="catpick">
+        {% for c in g.cats %}
+        <label class="check child"><input type="checkbox" name="categories" value="{{ c.key }}" {{ 'checked' if c.key in p.categories }}> {{ c.label }} <span class="muted">({{ c.id }})</span></label>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    {% elif not caps_fetched %}
+      <p class="muted">If one of your indexers has its own categories beyond these, open it on the Indexers page and click "Fetch categories". They'll then appear here.</p>
+    {% endif %}
   </fieldset>
 
   <label>Keywords and phrases
