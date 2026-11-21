@@ -39,3 +39,18 @@ def test_any_term_matches_and_exclusions():
 
 def test_title_hash_ignores_punctuation_and_case():
     assert title_hash("The.Beatles-Abbey.Road") == title_hash("the beatles abbey road")
+
+
+def test_search_variants_for_multiword_terms():
+    t = parse_terms('"The Rolling Stones"\nPink Floyd\nBeatles')
+    assert t[0].queries == ["the rolling stones", "therollingstones", "the.rolling.stones"]
+    assert t[1].queries == ["pink floyd", "pinkfloyd", "pink.floyd"]
+    assert t[2].queries == ["beatles"]
+
+
+def test_run_together_and_dotted_titles_match():
+    for title in ["The.Rolling.Stones-Sticky.Fingers", "TheRollingStones - Live 1972",
+                  "TheRollingStones2023.FLAC", "the_rolling_stones_hackney_diamonds"]:
+        assert m(title, '"The Rolling Stones"'), title
+    assert m("PinkFloyd-The.Wall", "Pink Floyd")
+    assert not m("Rolling Thunder Stones", '"The Rolling Stones"')

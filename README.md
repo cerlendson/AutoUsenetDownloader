@@ -72,7 +72,9 @@ Each profile has a name, one or more categories, and a list of keywords and phra
 | `"Michael Jackson"` | exact phrase | *Michael Jackson - Thriller* and *Michael Jackson Collection FLAC*, but not *Jackson Family Collection*. |
 | `-karaoke`, `-"Greatest Hits"` | exclusion | Rejects any title that contains it. |
 
-A title matches when it matches **any** keyword or phrase and none of the exclusions. Matching ignores case and treats dots, dashes and underscores as spaces, so `The.Beatles-Abbey_Road` matches `Beatles`.
+A title matches when it matches **any** keyword or phrase and none of the exclusions.
+
+Each entry with more than one word is searched three ways, because Usenet posts are often named without spaces. For example, `"The Rolling Stones"` searches for `the rolling stones`, `therollingstones` and `the.rolling.stones`. The results are merged, so a post found by more than one search is only handled once. Titles that run the words together, such as *TheRollingStones-Sticky.Fingers*, also count as a match. Matching ignores case and treats dots, dashes and underscores as spaces, so `The.Beatles-Abbey_Road` matches `Beatles`.
 
 Categories are chosen by name (Audio, Audio > Lossless, Movies > UHD and so on). Choosing a top-level category includes all of its subcategories. Each name maps to the standard Newznab category ID by default. If an indexer uses different IDs, override them on that indexer's edit page. **Fetch categories** shows the IDs the indexer reports.
 

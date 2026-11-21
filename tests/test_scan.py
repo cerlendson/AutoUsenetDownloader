@@ -133,3 +133,16 @@ def test_custom_indexer_category_only_used_on_that_indexer(fresh_db):
     geek, finder = fakes[1], fakes[2]
     assert geek.queries[0]["cat"] == ["100500"]
     assert finder.queries == []  # never searched without a category filter
+
+
+def test_variant_searches_are_merged_and_queued_once(fresh_db):
+    items = [
+        {"id": "r1", "title": "TheRollingStones-Sticky.Fingers.FLAC", "cats": [3040], "date": ago(1)},
+        {"id": "r2", "title": "The.Rolling.Stones.Hackney.Diamonds", "cats": [3040], "date": ago(1)},
+    ]
+    fakes, nz, scan, _ = setup(fresh_db, {"geek": items}, keywords='"The Rolling Stones"')
+    stats = scan()
+    ix = fakes[1]
+    assert [q["q"][0] for q in ix.queries] == ["the rolling stones", "therollingstones", "the.rolling.stones"]
+    assert stats.queued == 2 and stats.duplicates == 0
+    assert len(nz.appended) == 2

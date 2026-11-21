@@ -5,6 +5,7 @@ Profile keywords are entered one per line (commas also separate entries):
     Beatles               -> keyword: the word must appear in the title
     Pink Floyd            -> keyword: every word must appear, in any order
     "Michael Jackson"     -> exact phrase: the words must appear together, in order
+                             (also matches run together: "MichaelJackson")
     -live                 -> exclusion: titles containing this word are rejected
     -"Greatest Hits"      -> exclusion phrase
 
@@ -48,6 +49,19 @@ class Term:
         return " ".join(self.words)
 
     @property
+    def queries(self) -> list[str]:
+        """Search strings sent to indexers for this term.
+
+        Multi-word terms are also searched without spaces and with dots, since
+        Usenet posts are often named like "TheRollingStones" or
+        "The.Rolling.Stones": "the rolling stones", "therollingstones",
+        "the.rolling.stones".
+        """
+        if len(self.words) == 1:
+            return [self.words[0]]
+        return list(dict.fromkeys([" ".join(self.words), "".join(self.words), ".".join(self.words)]))
+
+    @property
     def display(self) -> str:
         text = f'"{self.raw}"' if self.phrase else self.raw
         return f"-{text}" if self.exclude else text
@@ -55,6 +69,11 @@ class Term:
     def matches_tokens(self, tokens: list[str]) -> bool:
         if not self.words:
             return False
+        # "TheRollingStones" or "TheRollingStones2023" as one run-together word.
+        if len(self.words) > 1:
+            joined = "".join(self.words)
+            if any(joined in tok for tok in tokens):
+                return True
         if not self.phrase:
             present = set(tokens)
             return all(w in present for w in self.words)

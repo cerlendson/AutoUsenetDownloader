@@ -137,14 +137,22 @@ def run_scan(now: datetime | None = None,
                 client = clients[ix["id"]]
 
                 for term in include_terms:
-                    stats.queries += 1
-                    try:
-                        results = client.search(term.query, wanted_ids or None, max_age_days, limit)
-                    except IndexerError as exc:
-                        msg = f"{ix['name']}: search for {term.display} failed: {exc}"
-                        stats.errors.append(msg)
-                        db.log_activity(msg, "error")
-                        continue
+                    # Search every variant of the term ("the rolling stones",
+                    # "therollingstones", "the.rolling.stones") and merge the
+                    # results so a post found by several variants is handled once.
+                    merged: dict[str, Release] = {}
+                    for query in term.queries:
+                        stats.queries += 1
+                        try:
+                            found = client.search(query, wanted_ids or None, max_age_days, limit)
+                        except IndexerError as exc:
+                            msg = f"{ix['name']}: search for '{query}' failed: {exc}"
+                            stats.errors.append(msg)
+                            db.log_activity(msg, "error")
+                            continue
+                        for rel in found:
+                            merged.setdefault(rel.guid or rel.nzb_id or rel.link, rel)
+                    results = list(merged.values())
                     stats.results += len(results)
 
                     for rel in results:

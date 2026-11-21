@@ -36,6 +36,7 @@
       <code>Pink Floyd</code> keyword with several words: all of them must appear, in any order.<br>
       <code>"Michael Jackson"</code> exact phrase: the words must appear together and in this order.<br>
       <code>-karaoke</code> or <code>-"Greatest Hits"</code> exclusion: skip titles that contain it.<br>
+      Entries with several words are also searched without spaces and with dots (<code>therollingstones</code>, <code>the.rolling.stones</code>), and match run-together titles.<br>
       Matching ignores case and punctuation, so <code>The.Beatles-Abbey_Road</code> matches <code>Beatles</code>.</small>
   </label>
   {% if terms %}<div>{% for t in terms %}<span class="chip {{ 'phrase' if t.phrase }} {{ 'exclude' if t.exclude }}">{{ t.display }}</span>{% endfor %}</div>{% endif %}
