@@ -5,6 +5,7 @@ import json
 import logging
 import math
 import re
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, Callable
@@ -81,8 +82,16 @@ def _default_indexer_factory(ix: dict[str, Any]) -> NewznabClient:
 def run_scan(now: datetime | None = None,
              indexer_factory: IndexerFactory = _default_indexer_factory,
              nzbget_factory: NZBGetFactory = NZBGetClient.from_settings,
-             profile_ids: list[int] | None = None) -> ScanStats:
+             profile_ids: list[int] | None = None,
+             pause_seconds: float = 0.0,
+             sleep: Callable[[float], None] = time.sleep) -> ScanStats:
+    """Run one scan.
+
+    pause_seconds: wait this long between indexer searches (used by scheduled
+    scans so the indexer API isn't hammered; manual scans pass 0).
+    """
     now = now or db.utcnow()
+    searched_once = False
     settings = db.get_settings()
     window_hours = float(settings.get("search_window_hours") or 24)
     cutoff = now - timedelta(hours=window_hours)
@@ -142,6 +151,9 @@ def run_scan(now: datetime | None = None,
                     # results so a post found by several variants is handled once.
                     merged: dict[str, Release] = {}
                     for query in term.queries:
+                        if pause_seconds and searched_once:
+                            sleep(pause_seconds)
+                        searched_once = True
                         stats.queries += 1
                         try:
                             found = client.search(query, wanted_ids or None, max_age_days, limit)

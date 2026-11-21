@@ -100,6 +100,24 @@ def parse_terms(text: str) -> list[Term]:
     return terms
 
 
+def sort_keywords(text: str) -> str:
+    """Tidy a profile's keyword list: one per line, A-Z (ignoring case and quotes),
+    duplicates and blank lines removed, exclusions (-word) listed last."""
+    lines, seen = [], set()
+    for line in (text or "").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        exclude = line.startswith("-")
+        words = tuple(tokenize(line.lstrip("-").strip().strip('"')))
+        if not words or (exclude, words) in seen:
+            continue
+        seen.add((exclude, words))
+        lines.append((exclude, " ".join(words), line))
+    lines.sort(key=lambda x: (x[0], x[1]))
+    return "\n".join(x[2] for x in lines)
+
+
 def match_title(title: str, terms: list[Term]) -> Term | None:
     """Return the first include-term that matches the title, or None."""
     tokens = tokenize(title)

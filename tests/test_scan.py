@@ -146,3 +146,27 @@ def test_variant_searches_are_merged_and_queued_once(fresh_db):
     assert [q["q"][0] for q in ix.queries] == ["the rolling stones", "therollingstones", "the.rolling.stones"]
     assert stats.queued == 2 and stats.duplicates == 0
     assert len(nz.appended) == 2
+
+
+def test_scheduled_scans_pause_between_searches_manual_do_not(fresh_db):
+    fakes, nz, _, nz_factory = setup(fresh_db, {"geek": ITEMS}, keywords="Beatles\nMichael Jackson")
+    ix = fakes[1]
+    factory = lambda i: NewznabClient(i["api_url"], i["api_key"], transport=httpx.MockTransport(ix.handler))  # noqa: E731
+    pauses = []
+    stats = searcher.run_scan(indexer_factory=factory, nzbget_factory=nz_factory,
+                              pause_seconds=1.0, sleep=pauses.append)
+    assert stats.queries == 4  # Beatles + 3 variants of Michael Jackson
+    assert pauses == [1.0, 1.0, 1.0]  # between searches, not before the first
+    pauses.clear()
+    searcher.run_scan(indexer_factory=factory, nzbget_factory=nz_factory, pause_seconds=0.0, sleep=pauses.append)
+    assert pauses == []
+
+
+def test_profile_keywords_saved_sorted(fresh_db):
+    from fastapi.testclient import TestClient
+    from app.web import app
+    with TestClient(app) as c:
+        c.post("/profiles/save", data={"name": "P", "enabled": "1", "categories": ["audio"],
+                                       "keywords": "Zappa\r\nabba\r\nMetallica", "action": "save"})
+    with db.connect() as conn:
+        assert conn.execute("SELECT keywords FROM profiles WHERE name='P'").fetchone()[0] == "abba\nMetallica\nZappa"

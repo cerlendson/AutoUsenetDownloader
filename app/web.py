@@ -434,6 +434,8 @@ async def profile_save(request: Request):
         "keywords": str(form.get("keywords", "")).replace("\r\n", "\n").strip(),
         "indexer_ids": [_int(i, 0) for i in form.getlist("indexer_ids") if _int(i, 0)],
     }
+    if form.get("action") != "test":
+        p["keywords"] = matcher.sort_keywords(p["keywords"])  # saved A-Z
     if form.get("action") == "test":
         title = str(form.get("test_title", "")).strip()
         hit = matcher.match_title(title, matcher.parse_terms(p["keywords"])) if title else None

@@ -22,11 +22,27 @@ def _handle_stop(signum, frame):  # noqa: ARG001
     _stop = True
 
 
-def scan_once() -> None:
+SCHEDULED_PAUSE_SECONDS = 1.0
+
+
+def _pause(seconds: float) -> None:
+    """Sleep between searches, keeping the dashboard heartbeat fresh."""
+    time.sleep(seconds)
+    global _last_beat
+    if time.monotonic() - _last_beat > 15:
+        db.set_settings({"worker_heartbeat": db.iso(db.utcnow())})
+        _last_beat = time.monotonic()
+
+
+_last_beat = 0.0
+
+
+def scan_once(manual: bool = False) -> None:
     started = db.utcnow()
-    log.info("Starting scan")
+    log.info("Starting %s scan", "manual" if manual else "scheduled")
     try:
-        stats = run_scan(now=started)
+        stats = run_scan(now=started, sleep=_pause,
+                         pause_seconds=0.0 if manual else SCHEDULED_PAUSE_SECONDS)
         summary = stats.summary()
         level = "warning" if stats.errors else "info"
     except Exception as exc:  # keep the worker alive whatever happens
@@ -51,7 +67,7 @@ def tick(last_monitor: float) -> float:
 
     next_scan = db.parse_iso(settings.get("next_scan_at"))
     if settings.get("scan_requested") or next_scan is None or now >= next_scan:
-        scan_once()
+        scan_once(manual=bool(settings.get("scan_requested")))
 
     monitor_every = float(settings.get("monitor_interval_seconds") or 60)
     if time.monotonic() - last_monitor >= monitor_every:

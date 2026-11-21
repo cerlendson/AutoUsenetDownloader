@@ -74,6 +74,8 @@ Each profile has a name, one or more categories, and a list of keywords and phra
 
 A title matches when it matches **any** line and none of the exclusions. Punctuation is ignored, so `The.Beatles-Abbey_Road` matches `Beatles`. Quotes from older profiles are still accepted and simply ignored.
 
+When you save a profile, its lines are sorted A to Z, ignoring case. Duplicates and blank lines are removed, and exclusions are listed last.
+
 Each line with more than one word is searched three ways. For example, `The Rolling Stones` searches for `the rolling stones`, `therollingstones` and `the.rolling.stones`. The results are merged, so a post found by more than one search is only handled once.
 
 Categories are chosen by name (Audio, Audio > Lossless, Movies > UHD and so on). Choosing a top-level category includes all of its subcategories. Each name maps to the standard Newznab category ID by default. If an indexer uses different IDs, override them on that indexer's edit page. **Fetch categories** shows the IDs the indexer reports.
@@ -91,6 +93,8 @@ For every enabled profile, every allowed indexer (highest priority first), and e
    - the title matches the keywords and phrases.
 3. Checks whether the release has already been processed (see below). If it has, the release is skipped.
 4. Downloads the NZB, checks again on the NZB's contents, and sends it to NZBGet. It records the NZBGet ID, the status and the queue date.
+
+Scheduled scans wait 1 second between searches so the indexer API isn't hammered. Manual scans (**Scan now**) run without the pause.
 
 ### Duplicate prevention
 

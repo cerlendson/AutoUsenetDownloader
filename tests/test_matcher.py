@@ -71,3 +71,10 @@ def test_run_together_and_dotted_titles_match():
         assert m(title, '"The Rolling Stones"'), title
     assert m("PinkFloyd-The.Wall", "Pink Floyd")
     assert not m("Rolling Thunder Stones", '"The Rolling Stones"')
+
+
+def test_sort_keywords_on_save():
+    from app.matcher import sort_keywords
+    text = 'the rolling stones\n\nMetallica\n-karaoke\n"Beatles"\nABBA\nmetallica\n-Greatest Hits\n'
+    assert sort_keywords(text).splitlines() == [
+        "ABBA", '"Beatles"', "Metallica", "the rolling stones", "-Greatest Hits", "-karaoke"]

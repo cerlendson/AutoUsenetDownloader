@@ -31,7 +31,7 @@
 
   <label>Keywords and phrases
     <textarea name="keywords" rows="8" placeholder="Beatles&#10;The Rolling Stones&#10;Michael Jackson&#10;-karaoke">{{ p.keywords }}</textarea>
-    <small>One per line, no quotes needed. A title matches if it matches <strong>any</strong> line. Upper and lower case don't matter.<br>
+    <small>One per line, no quotes needed. Lines are sorted A to Z when you save. A title matches if it matches <strong>any</strong> line. Upper and lower case don't matter.<br>
       <code>Beatles</code>: the word must appear in the title.<br>
       <code>The Rolling Stones</code>: the words must appear together and in this order. This line searches for <code>the rolling stones</code>, <code>therollingstones</code> and <code>the.rolling.stones</code>, and it matches titles written any of those ways.<br>
       <code>-karaoke</code> or <code>-Greatest Hits</code>: exclusion, skips titles that contain it.<br>
