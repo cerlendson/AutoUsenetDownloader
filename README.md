@@ -63,18 +63,18 @@ Advanced: if you'd rather run the UI and the worker in separate containers, run 
 
 ### Search profiles and matching
 
-Each profile has a name, one or more categories, and a list of keywords and phrases, one per line (commas also work):
+Each profile has a name, one or more categories, and a list of keywords and phrases, **one per line, without quotes**. Upper and lower case never matter.
 
-| Entry | Type | Matches |
-|-------|------|---------|
-| `Beatles` | keyword | Any title containing the word: *The Beatles - Abbey Road FLAC*, *Beatles Discography*, *Rare Beatles Collection*. It doesn't match *Beatlesque*. |
-| `Pink Floyd` | keyword with several words | Titles containing all of the words, in any order. |
-| `"Michael Jackson"` | exact phrase | *Michael Jackson - Thriller* and *Michael Jackson Collection FLAC*, but not *Jackson Family Collection*. |
-| `-karaoke`, `-"Greatest Hits"` | exclusion | Rejects any title that contains it. |
+| Line | Matches |
+|------|---------|
+| `Beatles` | Any title containing the word: *The Beatles - Abbey Road FLAC*, *Beatles Discography*, *Rare Beatles Collection*. It doesn't match *Beatlesque*. |
+| `The Rolling Stones` | The words together and in order, written any of these ways: *The Rolling Stones - Sticky Fingers*, *The.Rolling.Stones.Live*, *TheRollingStones-1972*. It doesn't match *Rolling Thunder Stones*. |
+| `Michael Jackson` | *Michael Jackson - Thriller* and *Michael Jackson Collection FLAC*, but not *Jackson Family Collection*. |
+| `-karaoke`, `-Greatest Hits` | Exclusion: rejects any title that contains it. |
 
-A title matches when it matches **any** keyword or phrase and none of the exclusions.
+A title matches when it matches **any** line and none of the exclusions. Punctuation is ignored, so `The.Beatles-Abbey_Road` matches `Beatles`. Quotes from older profiles are still accepted and simply ignored.
 
-Each entry with more than one word is searched three ways, because Usenet posts are often named without spaces. For example, `"The Rolling Stones"` searches for `the rolling stones`, `therollingstones` and `the.rolling.stones`. The results are merged, so a post found by more than one search is only handled once. Titles that run the words together, such as *TheRollingStones-Sticky.Fingers*, also count as a match. Matching ignores case and treats dots, dashes and underscores as spaces, so `The.Beatles-Abbey_Road` matches `Beatles`.
+Each line with more than one word is searched three ways. For example, `The Rolling Stones` searches for `the rolling stones`, `therollingstones` and `the.rolling.stones`. The results are merged, so a post found by more than one search is only handled once.
 
 Categories are chosen by name (Audio, Audio > Lossless, Movies > UHD and so on). Choosing a top-level category includes all of its subcategories. Each name maps to the standard Newznab category ID by default. If an indexer uses different IDs, override them on that indexer's edit page. **Fetch categories** shows the IDs the indexer reports.
 

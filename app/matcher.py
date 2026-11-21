@@ -1,13 +1,15 @@
 """Keyword and phrase matching against release titles.
 
-Profile keywords are entered one per line (commas also separate entries):
+Profile keywords are entered one per line. No quotes are needed:
 
-    Beatles               -> keyword: the word must appear in the title
-    Pink Floyd            -> keyword: every word must appear, in any order
-    "Michael Jackson"     -> exact phrase: the words must appear together, in order
-                             (also matches run together: "MichaelJackson")
-    -live                 -> exclusion: titles containing this word are rejected
-    -"Greatest Hits"      -> exclusion phrase
+    Beatles               -> the word must appear in the title
+    The Rolling Stones    -> the words must appear together and in order
+                             ("The.Rolling.Stones", "the rolling stones"), or
+                             run together ("TheRollingStones")
+    -live                 -> exclusion: titles containing this are rejected
+    -Greatest Hits        -> exclusion phrase
+
+Quotes around a line ("The Rolling Stones") are still accepted and ignored.
 
 A title matches a profile if it matches ANY of its keywords/phrases and none
 of its exclusions. Matching is case-insensitive and treats punctuation such as
@@ -21,7 +23,6 @@ import unicodedata
 from dataclasses import dataclass
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
-_ENTRY_RE = re.compile(r'(-?)\s*"([^"]+)"|([^,\n]+)')
 
 
 def tokenize(text: str) -> list[str]:
@@ -63,8 +64,7 @@ class Term:
 
     @property
     def display(self) -> str:
-        text = f'"{self.raw}"' if self.phrase else self.raw
-        return f"-{text}" if self.exclude else text
+        return f"-{self.raw}" if self.exclude else self.raw
 
     def matches_tokens(self, tokens: list[str]) -> bool:
         if not self.words:
@@ -82,28 +82,21 @@ class Term:
 
 
 def parse_terms(text: str) -> list[Term]:
+    """One term per line. Lines with several words are exact phrases."""
     terms: list[Term] = []
     seen: set[tuple] = set()
-    for m in _ENTRY_RE.finditer(text or ""):
-        if m.group(2) is not None:
-            raw, phrase, exclude = m.group(2).strip(), True, bool(m.group(1))
-        else:
-            raw = m.group(3).strip()
-            if not raw:
-                continue
-            exclude = raw.startswith("-")
-            raw = raw.lstrip("-").strip()
-            phrase = False
-            if raw.startswith('"') and raw.endswith('"') and len(raw) > 1:
-                raw, phrase = raw.strip('"').strip(), True
+    for line in (text or "").splitlines():
+        raw = line.strip()
+        exclude = raw.startswith("-")
+        raw = raw.lstrip("-").strip().strip('"').strip()
         words = tuple(tokenize(raw))
         if not words:
             continue
-        key = (words, phrase, exclude)
+        key = (words, exclude)
         if key in seen:
             continue
         seen.add(key)
-        terms.append(Term(raw=raw, words=words, phrase=phrase, exclude=exclude))
+        terms.append(Term(raw=raw, words=words, phrase=len(words) > 1, exclude=exclude))
     return terms
 
 

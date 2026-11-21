@@ -22,15 +22,32 @@ def test_phrase_examples_from_spec():
     assert not m("Jackson Michael Remix", '"Michael Jackson"')
 
 
-def test_multiword_keyword_requires_all_words_any_order():
-    assert m("Floyd, Pink - The Wall", "Pink Floyd")
-    assert not m("Pink - Greatest Hits", "Pink Floyd")
+def test_multiword_line_is_a_phrase_without_quotes():
+    assert m("Pink Floyd - The Wall", "Pink Floyd")
+    assert not m("Floyd, Pink - The Wall", "Pink Floyd")
+    assert m("Michael Jackson - Thriller", "Michael Jackson")
+    assert not m("Jackson Family Collection", "Michael Jackson")
+    t = parse_terms("The Rolling Stones")[0]
+    assert t.phrase and t.queries == ["the rolling stones", "therollingstones", "the.rolling.stones"]
+
+
+def test_case_insensitive_everywhere():
+    assert parse_terms("THE Rolling STONES")[0].queries == ["the rolling stones", "therollingstones", "the.rolling.stones"]
+    for title in ["THE ROLLING STONES LIVE", "the.rolling.stones", "TheRollingStones", "tHeRoLlInGsToNeS"]:
+        assert m(title, "The Rolling Stones"), title
+
+
+def test_commas_are_part_of_the_name():
+    terms = parse_terms("Crosby, Stills, Nash & Young")
+    assert len(terms) == 1
+    assert m("Crosby Stills Nash and Young - Deja Vu", "Crosby, Stills, Nash & Young")
+    assert not m("Stephen Stills - Manassas", "Crosby, Stills, Nash & Young")
 
 
 def test_any_term_matches_and_exclusions():
-    text = 'Beatles\nMetallica, "The Rolling Stones"\n-karaoke\n-"Greatest Hits"'
+    text = 'Beatles\nMetallica\n"The Rolling Stones"\n-karaoke\n-Greatest Hits'
     terms = parse_terms(text)
-    assert [t.display for t in terms] == ["Beatles", "Metallica", '"The Rolling Stones"', "-karaoke", '-"Greatest Hits"']
+    assert [t.display for t in terms] == ["Beatles", "Metallica", "The Rolling Stones", "-karaoke", "-Greatest Hits"]
     assert m("Metallica - Master of Puppets", text)
     assert m("The Rolling Stones - Sticky Fingers", text)
     assert not m("Beatles Karaoke Party", text)

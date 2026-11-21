@@ -30,14 +30,12 @@
   </fieldset>
 
   <label>Keywords and phrases
-    <textarea name="keywords" rows="8" placeholder='Beatles&#10;Pink Floyd&#10;"Michael Jackson"&#10;"The Rolling Stones"'>{{ p.keywords }}</textarea>
-    <small>One per line (commas also work). A title matches if it matches <strong>any</strong> line.<br>
-      <code>Beatles</code> keyword: the word must appear in the title.<br>
-      <code>Pink Floyd</code> keyword with several words: all of them must appear, in any order.<br>
-      <code>"Michael Jackson"</code> exact phrase: the words must appear together and in this order.<br>
-      <code>-karaoke</code> or <code>-"Greatest Hits"</code> exclusion: skip titles that contain it.<br>
-      Entries with several words are also searched without spaces and with dots (<code>therollingstones</code>, <code>the.rolling.stones</code>), and match run-together titles.<br>
-      Matching ignores case and punctuation, so <code>The.Beatles-Abbey_Road</code> matches <code>Beatles</code>.</small>
+    <textarea name="keywords" rows="8" placeholder="Beatles&#10;The Rolling Stones&#10;Michael Jackson&#10;-karaoke">{{ p.keywords }}</textarea>
+    <small>One per line, no quotes needed. A title matches if it matches <strong>any</strong> line. Upper and lower case don't matter.<br>
+      <code>Beatles</code>: the word must appear in the title.<br>
+      <code>The Rolling Stones</code>: the words must appear together and in this order. This line searches for <code>the rolling stones</code>, <code>therollingstones</code> and <code>the.rolling.stones</code>, and it matches titles written any of those ways.<br>
+      <code>-karaoke</code> or <code>-Greatest Hits</code>: exclusion, skips titles that contain it.<br>
+      Punctuation is ignored, so <code>The.Beatles-Abbey_Road</code> matches <code>Beatles</code>.</small>
   </label>
   {% if terms %}<div>{% for t in terms %}<span class="chip {{ 'phrase' if t.phrase }} {{ 'exclude' if t.exclude }}">{{ t.display }}</span>{% endfor %}</div>{% endif %}
 
